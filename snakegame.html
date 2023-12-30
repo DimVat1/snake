@@ -34,33 +34,19 @@
       z-index: 1;
     }
 
-    #restartButton, #saveButton {
+    #restartButton {
       margin-top: 20px;
       padding: 10px;
       font-size: 16px;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-
-    #restartButton {
       background-color: #4CAF50;
       color: white;
       border: none;
-      margin-right: 10px;
+      border-radius: 5px;
+      cursor: pointer;
     }
 
     #restartButton:hover {
       background-color: #45a049;
-    }
-
-    #saveButton {
-      background-color: #008CBA;
-      color: white;
-      border: none;
-    }
-
-    #saveButton:hover {
-      background-color: #007BAA;
     }
 
     #controls {
@@ -84,7 +70,6 @@
     <h2>Game Over</h2>
     <p>Your final score: <span id="finalScore"></span></p>
     <button id="restartButton" onclick="restartGame()">Restart</button>
-    <button id="saveButton" onclick="saveScore()">Save</button>
   </div>
 
   <canvas id="snakeCanvas"></canvas>
@@ -269,16 +254,6 @@
     function hideGameOverScreen() {
       const gameOverScreen = document.getElementById("gameOverScreen");
       gameOverScreen.style.display = "none";
-    }
-
-    function saveScore() {
-      const playerName = prompt("Enter your name:");
-      if (playerName) {
-        // Here you can send the score and playerName to a server or save them locally
-        const scoreInfo = { playerName, score, timestamp: new Date().toLocaleString() };
-        localStorage.setItem("myscore.info", JSON.stringify(scoreInfo));
-        alert("Score saved successfully!");
-      }
     }
 
     function changeDirection(e) {
