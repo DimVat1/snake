@@ -18,10 +18,10 @@
     canvas {
       border: 1px solid #333;
       width: 100%;
-      max-width: 400px; /* Set maximum width for smaller screens */
+      max-width: 800px; /* Set maximum width for the canvas */
+      margin: 0 auto; /* Center the canvas */
     }
 
-    #gameOverPopup,
     #menuPopup {
       display: none;
       position: fixed;
@@ -34,26 +34,7 @@
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
       padding: 20px;
       z-index: 1;
-      max-width: 80%; /* Adjust maximum width for smaller screens */
-    }
-
-    #restartButton {
-      margin-top: 20px;
-      padding: 10px;
-      font-size: 16px;
-      background-color: #FF0000; /* Red */
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    #restartButton:hover {
-      background-color: #CC0000; /* Darker red on hover */
-    }
-
-    #menuPopup {
-      max-width: 90%; /* Adjust maximum width for smaller screens */
+      max-width: 90%; /* Adjust maximum width for the menu popup */
     }
 
     #closeMenuButton {
@@ -73,7 +54,7 @@
       left: 50%;
       transform: translateX(-50%);
       display: flex;
-      max-width: 400px; /* Set maximum width for smaller screens */
+      max-width: 800px; /* Set maximum width for the controls */
       width: 100%;
       justify-content: space-between;
     }
@@ -87,32 +68,41 @@
     }
 
     .arrow {
-      font-size: 36px; /* Default size for larger screens */
+      font-size: 24px; /* Default size for larger screens */
+    }
+
+    #sizeAdjust {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      width: 80px;
     }
 
     @media only screen and (max-width: 600px) {
       .arrow {
-        font-size: 48px; /* Larger size for smaller screens (phones) */
+        font-size: 36px; /* Larger size for smaller screens (phones) */
       }
 
-      canvas {
-        max-width: none; /* Remove maximum width for smaller screens */
-      }
-
+      canvas,
+      #menuPopup,
       #controls {
-        flex-direction: column;
-        align-items: center;
+        max-width: none; /* Remove maximum width for smaller screens */
       }
     }
   </style>
 </head>
 <body>
 
-  <div id="gameOverPopup">
-    <h2>Game Over</h2>
-    <p>Your final score: <span id="finalScore"></span></p>
-    <button id="restartButton" onclick="restartGame()">Restart</button>
-  </div>
+  <input
+    type="range"
+    id="sizeAdjust"
+    name="sizeAdjust"
+    min="300"
+    max="800"
+    step="10"
+    value="800"
+    oninput="adjustSize(this.value)"
+  />
 
   <div id="menuPopup">
     <h2>Menu</h2>
@@ -134,10 +124,9 @@
     const canvas = document.getElementById("snakeCanvas");
     const ctx = canvas.getContext("2d");
 
-    const boxSize = 20;
+    let boxSize = 20;
     let snake = [{ x: 10, y: 10 }];
     let direction = "right";
-    let isGameOver = false;
     let isPaused = false;
     let fruits = [];
     let score = 0;
@@ -147,12 +136,13 @@
     canvas.width = window.innerWidth - (window.innerWidth % boxSize);
     canvas.height = window.innerHeight - (window.innerHeight % boxSize);
 
-    function draw() {
-      if (isGameOver || isPaused) {
-        showGameOverPopup();
-        return;
-      }
+    function adjustSize(value) {
+      boxSize = parseInt(value);
+      canvas.width = window.innerWidth - (window.innerWidth % boxSize);
+      canvas.height = window.innerHeight - (window.innerHeight % boxSize);
+    }
 
+    function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       drawGrid();
@@ -221,9 +211,6 @@
           break;
       }
 
-      snake.unshift(newHead);
-
-      // Check if the snake ate a fruit
       for (let i = 0; i < fruits.length; i++) {
         const fruit = fruits[i];
         if (newHead.x === fruit.x && newHead.y === fruit.y) {
@@ -233,17 +220,20 @@
         }
       }
 
-      // Check if the snake hit itself
       if (isSnakeCollision()) {
-        isGameOver = true;
-      } else {
-        if (!hasEaten) {
-          snake.pop();
-        } else {
-          hasEaten = false;
-          spawnFruit();
-        }
+        showGameOverPopup();
+        isPaused = true;
+        return;
       }
+
+      if (!hasEaten) {
+        snake.pop();
+      } else {
+        hasEaten = false;
+        spawnFruit();
+      }
+
+      snake.unshift(newHead);
     }
 
     function checkCollision() {
@@ -254,11 +244,13 @@
         snake[0].y < 0 ||
         snake[0].y >= canvas.height / boxSize
       ) {
-        isGameOver = true;
+        showGameOverPopup();
+        isPaused = true;
       }
     }
 
     function isSnakeCollision() {
+      // Check if the snake hit itself
       for (let i = 1; i < snake.length; i++) {
         if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) {
           return true;
@@ -277,48 +269,43 @@
     }
 
     function getRandomFruitColor() {
-      const colors = ["#FFA500", "#FF0000", "#FFFF00", "#008000", "#800080"];
+      const colors = ["#FFA500", "#FF0000", "#FFFF00", "#800080", "#00FF00"];
       return colors[Math.floor(Math.random() * colors.length)];
     }
 
+    function closeMenu() {
+      isPaused = false;
+      document.getElementById("menuPopup").style.display = "none";
+    }
+
     function showGameOverPopup() {
-      const gameOverPopup = document.getElementById("gameOverPopup");
-      const finalScore = document.getElementById("finalScore");
-      finalScore.textContent = score;
-      gameOverPopup.style.display = "block";
+      document.getElementById("gameOverPopup").style.display = "block";
+      document.getElementById("finalScore").textContent = score;
     }
 
     function restartGame() {
       isGameOver = false;
       isPaused = false;
-      snake = [{ x: 10, y: 10 }];
-      direction = "right";
       score = 0;
+      snake = [{ x: 10, y: 10 }];
       fruits = [];
-      spawnFruit();
-      hideGameOverPopup();
-      closeMenu(); // Close the menu on restart
-      gameLoop();
-    }
-
-    function hideGameOverPopup() {
-      const gameOverPopup = document.getElementById("gameOverPopup");
-      gameOverPopup.style.display = "none";
+      hasEaten = true;
+      document.getElementById("gameOverPopup").style.display = "none";
+      document.getElementById("menuPopup").style.display = "none";
+      fruits.push({
+        x: Math.floor(Math.random() * (canvas.width / boxSize)),
+        y: Math.floor(Math.random() * (canvas.height / boxSize)),
+        color: getRandomFruitColor(),
+      });
+      draw();
     }
 
     function openMenu() {
       isPaused = true;
-      const menuPopup = document.getElementById("menuPopup");
-      menuPopup.style.display = "block";
+      document.getElementById("menuPopup").style.display = "block";
     }
 
-    function closeMenu() {
-      isPaused = false;
-      const menuPopup = document.getElementById("menuPopup");
-      menuPopup.style.display = "none";
-    }
-
-    function changeDirection(e) {
+    document.addEventListener("keydown", function (e) {
       switch (e.key) {
         case "ArrowUp":
           direction = "up";
@@ -333,25 +320,20 @@
           direction = "right";
           break;
       }
-    }
+    });
 
-    function gameLoop() {
-      draw();
-      if (!isGameOver && !isPaused) {
-        setTimeout(gameLoop, 100);
-      }
-    }
+    window.addEventListener("resize", function () {
+      canvas.width = window.innerWidth - (window.innerWidth % boxSize);
+      canvas.height = window.innerHeight - (window.innerHeight % boxSize);
+    });
 
-    document.addEventListener("keydown", changeDirection);
+    fruits.push({
+      x: Math.floor(Math.random() * (canvas.width / boxSize)),
+      y: Math.floor(Math.random() * (canvas.height / boxSize)),
+      color: getRandomFruitColor(),
+    });
 
-    // Add touch event listeners for on-screen arrows
-    document.getElementById("upArrow").addEventListener("click", () => (direction = "up"));
-    document.getElementById("leftArrow").addEventListener("click", () => (direction = "left"));
-    document.getElementById("downArrow").addEventListener("click", () => (direction = "down"));
-    document.getElementById("rightArrow").addEventListener("click", () => (direction = "right"));
-
-    spawnFruit();
-    gameLoop();
+    draw();
   </script>
 </body>
 </html>
