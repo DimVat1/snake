@@ -20,9 +20,9 @@
       width: 100%;
     }
 
-    #gameOverScreen {
+    #gameOverPopup {
       display: none;
-      position: absolute;
+      position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
@@ -38,7 +38,7 @@
       margin-top: 20px;
       padding: 10px;
       font-size: 16px;
-      background-color: #4CAF50;
+      background-color: #FF0000; /* Red */
       color: white;
       border: none;
       border-radius: 5px;
@@ -46,7 +46,33 @@
     }
 
     #restartButton:hover {
-      background-color: #45a049;
+      background-color: #CC0000; /* Darker red on hover */
+    }
+
+    #menuPopup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      background-color: white;
+      border: 1px solid #333;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      z-index: 1;
+    }
+
+    #openMenuButton,
+    #closeMenuButton {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 24px;
+      background-color: transparent;
+      border: none;
+      cursor: pointer;
+      outline: none;
     }
 
     #controls {
@@ -57,28 +83,49 @@
       display: flex;
     }
 
-    .arrow {
-      font-size: 36px;
+    .arrow-container {
+      background-color: rgba(255, 255, 255, 0.7); /* Transparent white */
+      border-radius: 50%;
+      padding: 15px;
       margin: 0 15px;
       cursor: pointer;
+    }
+
+    .arrow {
+      font-size: 36px; /* Default size for larger screens */
+    }
+
+    @media only screen and (max-width: 600px) {
+      .arrow {
+        font-size: 48px; /* Larger size for smaller screens (phones) */
+      }
     }
   </style>
 </head>
 <body>
 
-  <div id="gameOverScreen">
+  <div id="gameOverPopup">
     <h2>Game Over</h2>
     <p>Your final score: <span id="finalScore"></span></p>
     <button id="restartButton" onclick="restartGame()">Restart</button>
   </div>
 
+  <div id="menuPopup">
+    <h2>Menu</h2>
+    <button id="closeMenuButton" onclick="closeMenu()">⛔</button>
+    <button id="restartMenuButton" onclick="restartGame()">Restart</button>
+    <!-- Add more menu items and buttons here -->
+  </div>
+
   <canvas id="snakeCanvas"></canvas>
 
+  <button id="openMenuButton" onclick="openMenu()">⚙️</button>
+
   <div id="controls">
-    <div class="arrow" id="upArrow">&#8593;</div>
-    <div class="arrow" id="leftArrow">&#8592;</div>
-    <div class="arrow" id="downArrow">&#8595;</div>
-    <div class="arrow" id="rightArrow">&#8594;</div>
+    <div class="arrow-container" id="upArrow">&#8593;</div>
+    <div class="arrow-container" id="leftArrow">&#8592;</div>
+    <div class="arrow-container" id="downArrow">&#8595;</div>
+    <div class="arrow-container" id="rightArrow">&#8594;</div>
   </div>
 
   <script>
@@ -89,9 +136,9 @@
     let snake = [{ x: 10, y: 10 }];
     let direction = "right";
     let isGameOver = false;
+    let isPaused = false;
     let fruits = [];
     let score = 0;
-    let isPaused = false;
     let hasEaten = true; // Flag to control fruit spawning
 
     // Set canvas dimensions based on the device's width and height
@@ -100,7 +147,7 @@
 
     function draw() {
       if (isGameOver || isPaused) {
-        showGameOverScreen();
+        showGameOverPopup();
         return;
       }
 
@@ -232,11 +279,11 @@
       return colors[Math.floor(Math.random() * colors.length)];
     }
 
-    function showGameOverScreen() {
-      const gameOverScreen = document.getElementById("gameOverScreen");
+    function showGameOverPopup() {
+      const gameOverPopup = document.getElementById("gameOverPopup");
       const finalScore = document.getElementById("finalScore");
       finalScore.textContent = score;
-      gameOverScreen.style.display = "block";
+      gameOverPopup.style.display = "block";
     }
 
     function restartGame() {
@@ -247,13 +294,26 @@
       score = 0;
       fruits = [];
       spawnFruit();
-      hideGameOverScreen();
+      hideGameOverPopup();
+      closeMenu(); // Close the menu on restart
       gameLoop();
     }
 
-    function hideGameOverScreen() {
-      const gameOverScreen = document.getElementById("gameOverScreen");
-      gameOverScreen.style.display = "none";
+    function hideGameOverPopup() {
+      const gameOverPopup = document.getElementById("gameOverPopup");
+      gameOverPopup.style.display = "none";
+    }
+
+    function openMenu() {
+      isPaused = true;
+      const menuPopup = document.getElementById("menuPopup");
+      menuPopup.style.display = "block";
+    }
+
+    function closeMenu() {
+      isPaused = false;
+      const menuPopup = document.getElementById("menuPopup");
+      menuPopup.style.display = "none";
     }
 
     function changeDirection(e) {
