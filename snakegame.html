@@ -34,19 +34,47 @@
       z-index: 1;
     }
 
-    #restartButton {
+    #restartButton, #saveButton {
       margin-top: 20px;
       padding: 10px;
       font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    #restartButton {
       background-color: #4CAF50;
       color: white;
       border: none;
-      border-radius: 5px;
-      cursor: pointer;
+      margin-right: 10px;
     }
 
     #restartButton:hover {
       background-color: #45a049;
+    }
+
+    #saveButton {
+      background-color: #008CBA;
+      color: white;
+      border: none;
+    }
+
+    #saveButton:hover {
+      background-color: #007BAA;
+    }
+
+    #controls {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+    }
+
+    .arrow {
+      font-size: 36px;
+      margin: 0 15px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -56,9 +84,17 @@
     <h2>Game Over</h2>
     <p>Your final score: <span id="finalScore"></span></p>
     <button id="restartButton" onclick="restartGame()">Restart</button>
+    <button id="saveButton" onclick="saveScore()">Save</button>
   </div>
 
   <canvas id="snakeCanvas"></canvas>
+
+  <div id="controls">
+    <div class="arrow" id="upArrow">&#8593;</div>
+    <div class="arrow" id="leftArrow">&#8592;</div>
+    <div class="arrow" id="downArrow">&#8595;</div>
+    <div class="arrow" id="rightArrow">&#8594;</div>
+  </div>
 
   <script>
     const canvas = document.getElementById("snakeCanvas");
@@ -235,6 +271,16 @@
       gameOverScreen.style.display = "none";
     }
 
+    function saveScore() {
+      const playerName = prompt("Enter your name:");
+      if (playerName) {
+        // Here you can send the score and playerName to a server or save them locally
+        const scoreInfo = { playerName, score, timestamp: new Date().toLocaleString() };
+        localStorage.setItem("myscore.info", JSON.stringify(scoreInfo));
+        alert("Score saved successfully!");
+      }
+    }
+
     function changeDirection(e) {
       switch (e.key) {
         case "ArrowUp":
@@ -260,6 +306,12 @@
     }
 
     document.addEventListener("keydown", changeDirection);
+
+    // Add touch event listeners for on-screen arrows
+    document.getElementById("upArrow").addEventListener("click", () => (direction = "up"));
+    document.getElementById("leftArrow").addEventListener("click", () => (direction = "left"));
+    document.getElementById("downArrow").addEventListener("click", () => (direction = "down"));
+    document.getElementById("rightArrow").addEventListener("click", () => (direction = "right"));
 
     spawnFruit();
     gameLoop();
