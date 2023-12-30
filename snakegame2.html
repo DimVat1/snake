@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snake Game</title>
+  <style>
+    body {
+      display: flex;
+      height: 100vh;
+      margin: 0;
+      background-color: #f0f0f0;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    canvas {
+      border: 1px solid #333;
+      max-width: 100%; /* Set maximum width for smaller screens */
+    }
+
+    #gameOverPopup,
+    #menuPopup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      background-color: white;
+      border: 1px solid #333;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      z-index: 1;
+      width: 80%; /* Adjust width for smaller screens */
+      max-width: 400px; /* Set maximum width for larger screens */
+    }
+
+    #restartButton,
+    #homeButton,
+    #openMenuButton {
+      margin-top: 20px;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #FF0000; /* Red */
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #restartButton:hover,
+    #homeButton:hover,
+    #openMenuButton:hover {
+      background-color: #CC0000; /* Darker red on hover */
+    }
+
+    #menuPopup {
+      width: 90%; /* Adjust width for smaller screens */
+      max-width: 400px; /* Set maximum width for larger screens */
+    }
+
+    #closeMenuButton {
+      font-size: 24px;
+      background-color: transparent;
+      border: none;
+      cursor: pointer;
+      outline: none;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+
+    #controls {
+      position: fixed;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: space-between;
+      max-width: 400px; /* Set maximum width for smaller screens */
+      width: 100%;
+    }
+
+    .arrow-container {
+      background-color: rgba(255, 255, 255, 0.7); /* Transparent white */
+      border-radius: 50%;
+      padding: 15px;
+      margin: 0 15px;
+      cursor: pointer;
+    }
+
+    .arrow {
+      font-size: 36px; /* Default size for larger screens */
+    }
+
+    @media only screen and (max-width: 600px) {
+      .arrow {
+        font-size: 48px; /* Larger size for smaller screens (phones) */
+      }
+
+      canvas {
+        max-width: none; /* Remove maximum width for smaller screens */
+      }
+
+      #controls {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      #gameOverPopup,
+      #menuPopup {
+        width: 90%; /* Adjust width for smaller screens */
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="gameOverPopup">
+    <h2>Game Over</h2>
+    <p>Your final score: <span id="finalScore"></span></p>
+    <button id="restartButton" onclick="restartGame()">Restart</button>
+    <button id="homeButton" onclick="goHome()">Home</button>
+  </div>
+
+  <div id="menuPopup">
+    <h2>Menu</h2>
+    <button id="closeMenuButton" onclick="closeMenu()">⛔</button>
+    <button id="restartMenuButton" onclick="restartGame()">Restart</button>
+    <button id="homeMenuButton" onclick="goHome()">Home</button>
+    <!-- Add more menu items and buttons here -->
+  </div>
+
+  <button id="openMenuButton" onclick="openMenu()">Menu</button>
+
+  <canvas id="snakeCanvas"></canvas>
+
+  <div id="controls">
+    <div class="arrow-container" id="upArrow">&#8593;</div>
+    <div class="arrow-container" id="leftArrow">&#8592;</div>
+    <div class="arrow-container" id="downArrow">&#8595;</div>
+    <div class="arrow-container" id="rightArrow">&#8594;</div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("snakeCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const boxSize = 20;
+    let snake = [{ x: 10, y: 10 }];
+    let direction = "right";
+    let isGameOver = false;
+    let isPaused = false;
+    let fruits = [];
+    let score = 0;
+    let hasEaten = true; // Flag to control fruit spawning
+
+    // Set canvas dimensions based on the device's width and height
+    canvas.width = window.innerWidth - (window.innerWidth % boxSize);
+    canvas.height = window.innerHeight - (window.innerHeight % boxSize);
+
+    function draw() {
+      if (isGameOver || isPaused) {
+        showGameOverPopup();
+        return;
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawGrid();
+      drawSnake();
+      drawFruits();
+      drawScore();
+
+      moveSnake();
+      checkCollision();
+    }
+
+    function drawGrid() {
+      ctx.strokeStyle = "#888";
+      ctx.lineWidth = 1;
+
+      for (let i = 0; i < canvas.width; i += boxSize) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+      }
+
+      for (let i = 0; i < canvas.height; i += boxSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+      }
+    }
+
+    function drawSnake() {
+      ctx.fillStyle = "#008000"; // Green
+      snake.forEach(segment => {
+        ctx.fillRect(segment.x * boxSize, segment.y * boxSize, boxSize, boxSize);
+      });
+    }
+
+    function drawFruits() {
+      fruits.forEach(fruit => {
+        ctx.fillStyle = fruit.color;
+        ctx.fillRect(fruit.x * boxSize, fruit.y * boxSize, boxSize, boxSize);
+      });
+    }
+
+    function drawScore() {
+      ctx.fillStyle = "#000";
+      ctx.font = "20px Arial";
+      ctx.fillText(`Score: ${score}`, 10, 20);
+    }
+
+    function moveSnake() {
+      let newHead = { x: snake[0].x, y: snake[0].y };
+
+      switch (direction) {
+        case "up":
+          newHead.y--;
+          break;
+        case "down":
+          newHead.y++;
+          break;
+        case "left":
+          newHead.x--;
+          break;
+        case "right":
+          newHead.x++;
+          break;
+      }
+
+      snake.unshift(newHead);
+
+      // Check if the snake ate a fruit
+      for (let i = 0; i < fruits.length; i++) {
+        const fruit = fruits[i];
+        if (newHead.x === fruit.x && newHead.y === fruit.y) {
+          fruits.splice(i, 1);
+          hasEaten = true;
+          score++;
+        }
+      }
+
+      // Check if the snake hit itself
+      if (isSnakeCollision()) {
+        isGameOver = true;
+      } else {
+        if (!hasEaten) {
+          snake.pop();
+        } else {
+          hasEaten = false;
+          spawnFruit();
+        }
+      }
+    }
+
+    function checkCollision() {
+      // Check if the snake hit the walls
+      if (
+        snake[0].x < 0 ||
+        snake[0].x >= canvas.width / boxSize ||
+        snake[0].y < 0 ||
+        snake[0].y >= canvas.height / boxSize
+      ) {
+        isGameOver = true;
+      }
+    }
+
+    function isSnakeCollision() {
+      for (let i = 1; i < snake.length; i++) {
+        if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function spawnFruit() {
+      const fruit = {
+        x: Math.floor(Math.random() * (canvas.width / boxSize)),
+        y: Math.floor(Math.random() * (canvas.height / boxSize)),
+        color: getRandomFruitColor(),
+      };
+      fruits.push(fruit);
+    }
+
+    function getRandomFruitColor() {
+      const colors = ["#FFA500", "#FF0000", "#FFFF00", "#008000", "#800080"];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function showGameOverPopup() {
+      const gameOverPopup = document.getElementById("gameOverPopup");
+      const finalScore = document.getElementById("finalScore");
+      finalScore.textContent = score;
+      gameOverPopup.style.display = "block";
+    }
+
+    function restartGame() {
+      isGameOver = false;
+      isPaused = false;
+      snake = [{ x: 10, y: 10 }];
+      direction = "right";
+      score = 0;
+      fruits = [];
+      spawnFruit();
+      hideGameOverPopup();
+      closeMenu(); // Close the menu on restart
+      gameLoop();
+    }
+
+    function hideGameOverPopup() {
+      const gameOverPopup = document.getElementById("gameOverPopup");
+      gameOverPopup.style.display = "none";
+    }
+
+    function openMenu() {
+      isPaused = true;
+      const menuPopup = document.getElementById("menuPopup");
+      menuPopup.style.display = "block";
+    }
+
+    function closeMenu() {
+      isPaused = false;
+      const menuPopup = document.getElementById("menuPopup");
+      menuPopup.style.display = "none";
+    }
+
+    function goHome() {
+      window.location.href = "index.html"; // Replace with the actual filename of your home page
+    }
+
+    function changeDirection(e) {
+      switch (e.key) {
+        case "ArrowUp":
+          direction = "up";
+          break;
+        case "ArrowDown":
+          direction = "down";
+          break;
+        case "ArrowLeft":
+          direction = "left";
+          break;
+        case "ArrowRight":
+          direction = "right";
+          break;
+      }
+    }
+
+    function gameLoop() {
+      draw();
+      if (!isGameOver && !isPaused) {
+        setTimeout(gameLoop, 100);
+      }
+    }
+
+    document.addEventListener("keydown", changeDirection);
+
+    // Add touch event listeners for on-screen arrows
+    document.getElementById("upArrow").addEventListener("click", () => (direction = "up"));
+    document.getElementById("leftArrow").addEventListener("click", () => (direction = "left"));
+    document.getElementById("downArrow").addEventListener("click", () => (direction = "down"));
+    document.getElementById("rightArrow").addEventListener("click", () => (direction = "right"));
+
+    spawnFruit();
+    gameLoop();
+  </script>
+</body>
+</html>
