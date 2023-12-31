@@ -29,21 +29,53 @@
       border: none;
       outline: none;
     }
+
+    #gameOverPopup {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px;
+      background-color: #fff;
+      border: 2px solid #333;
+      text-align: center;
+      z-index: 1; /* Ensure the popup is above the canvas */
+    }
+
+    #gameOverPopup h2 {
+      margin-bottom: 10px;
+    }
+
+    #restartButton {
+      padding: 10px;
+      font-size: 16px;
+      background-color: #008000; /* Green */
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <a href="index.html" id="menuButton">⚙️</a>
   <canvas id="snakeCanvas"></canvas>
+  <div id="gameOverPopup">
+    <h2>Game Over!</h2>
+    <p>Your score: <span id="score"></span></p>
+    <button id="restartButton" onclick="restartGame()">Restart</button>
+  </div>
+
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const canvas = document.getElementById("snakeCanvas");
       const ctx = canvas.getContext("2d");
 
-      const boxSize = 20;
+      const boxSize = 30;
       let columns = Math.floor(window.innerWidth / boxSize);
       let rows = Math.floor(window.innerHeight / boxSize);
 
-      // Adjust canvas size to be a multiple of boxSize
       canvas.width = columns * boxSize;
       canvas.height = rows * boxSize;
 
@@ -52,7 +84,7 @@
       let isGameOver = false;
       let fruits = [];
       let score = 0;
-      let hasEaten = true; // Flag to control fruit spawning
+      let hasEaten = true;
 
       document.addEventListener("keydown", function (e) {
         if (isGameOver) {
@@ -62,13 +94,16 @@
         }
       });
 
-      // Touch controls
       let touchStartX = 0;
       let touchStartY = 0;
 
       document.addEventListener("touchstart", function (e) {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
+      });
+
+      document.addEventListener("touchmove", function (e) {
+        e.preventDefault();
       });
 
       document.addEventListener("touchend", function (e) {
@@ -79,14 +114,12 @@
         const deltaY = touchEndY - touchStartY;
 
         if (Math.abs(deltaX) > Math.abs(deltaY)) {
-          // Horizontal swipe
           if (deltaX > 0) {
             direction = "right";
           } else {
             direction = "left";
           }
         } else {
-          // Vertical swipe
           if (deltaY > 0) {
             direction = "down";
           } else {
@@ -149,7 +182,7 @@
       }
 
       function drawSnake() {
-        ctx.fillStyle = "#008000"; // Green
+        ctx.fillStyle = "#008000";
         snake.forEach(segment => {
           ctx.fillRect(segment.x * boxSize, segment.y * boxSize, boxSize, boxSize);
         });
@@ -188,7 +221,6 @@
 
         snake.unshift(newHead);
 
-        // Check if the snake ate a fruit
         for (let i = 0; i < fruits.length; i++) {
           const fruit = fruits[i];
           if (newHead.x === fruit.x && newHead.y === fruit.y) {
@@ -198,7 +230,6 @@
           }
         }
 
-        // Check if the snake hit itself
         if (isSnakeCollision()) {
           isGameOver = true;
         } else {
@@ -212,7 +243,6 @@
       }
 
       function checkCollision() {
-        // Check if the snake hit the walls
         if (
           snake[0].x < 0 ||
           snake[0].x >= canvas.width / boxSize ||
@@ -222,7 +252,6 @@
           isGameOver = true;
         }
 
-        // Check if the snake hit itself
         for (let i = 1; i < snake.length; i++) {
           if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) {
             isGameOver = true;
@@ -232,7 +261,6 @@
       }
 
       function isSnakeCollision() {
-        // Check if the snake hit itself
         for (let i = 1; i < snake.length; i++) {
           if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) {
             return true;
@@ -252,23 +280,28 @@
       }
 
       function getRandomFruitColor() {
-        const colors = ["#FFA500", "#FF0000", "#FFFF00", "#800080", "#00FFFF"]; // Orange, Red, Yellow, Purple, Cyan
+        const colors = ["#FFA500", "#FF0000", "#FFFF00", "#800080", "#00FFFF"];
         return colors[Math.floor(Math.random() * colors.length)];
       }
 
       function showGameOverPopup() {
-        alert("Game Over! Your score: " + score);
-        restartGame();
+        document.getElementById("score").innerText = score;
+        document.getElementById("gameOverPopup").style.display = "block";
       }
 
       function restartGame() {
+        document.getElementById("gameOverPopup").style.display = "none";
         isGameOver = false;
         snake = [{ x: 10, y: 10 }];
         direction = "right";
         score = 0;
         fruits = [];
         hasEaten = true;
-        fruits.forEach(spawnFruit);
+
+        for (let i = 0; i < 10; i++) {
+          spawnFruit();
+        }
+
         gameLoop();
       }
 
@@ -280,20 +313,19 @@
       }
 
       window.addEventListener("resize", function () {
-        // Recalculate columns and rows based on the current zoom level
         columns = Math.floor(window.innerWidth / boxSize);
         rows = Math.floor(window.innerHeight / boxSize);
 
-        // Adjust canvas size to be a multiple of boxSize
         canvas.width = columns * boxSize;
         canvas.height = rows * boxSize;
 
-        // Restart the game
         restartGame();
       });
 
-      // Initial fruit spawn
-      fruits.forEach(spawnFruit);
+      for (let i = 0; i < 10; i++) {
+        spawnFruit();
+      }
+
       gameLoop();
     });
   </script>
